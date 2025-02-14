@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malayalam Letter Recognition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 50%;
+            margin: 50px auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .logo {
+            width: 80px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+        .btn {
+            padding: 10px 20px;
+            background: #2A9D8F;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .btn:hover {
+            background: #264653;
+        }
+        .result {
+            font-size: 20px;
+            margin-top: 20px;
+        }
+        img {
+            max-width: 100%;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        .cropped-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .cropped-item {
+            margin: 10px;
+            text-align: center;
+        }
+        .cropped-item img {
+            width: 80px;
+            height: 80px;
+            border: 1px solid #ddd;
+            padding: 5px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Logo">
+    
+    <div class="container">
+        <h2>Malayalam Letter Recognition</h2>
+        <form action="/" method="post" enctype="multipart/form-data">
+            <input type="file" name="image" required>
+            <br>
+            <button class="btn" type="submit">Upload & Predict</button>
+        </form>
+
+        {% if uploaded_image %}
+            <h3>Uploaded Image:</h3>
+            <img src="{{ uploaded_image }}" alt="Uploaded Image">
+        {% endif %}
+
+        {% if cropped_images %}
+            <h3>Cropped Letters:</h3>
+            <div class="cropped-container">
+                {% for img, pred in zipped %}
+                    <div class="cropped-item">
+                        <img src="{{ img }}" alt="Cropped Letter">
+                        <p>{{ pred }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</

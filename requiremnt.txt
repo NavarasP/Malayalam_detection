@@ -1,0 +1,6 @@
+unidecode
+simplejson
+tensorflow
+matplotlib
+Levenshtein
+opencv-python
