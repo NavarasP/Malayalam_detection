@@ -4,3 +4,4 @@ tensorflow
 matplotlib
 Levenshtein
 opencv-python
+surya-ocr
