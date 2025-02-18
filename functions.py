@@ -7,12 +7,18 @@ import pickle
 from tqdm import tqdm
 import glob
 from ocr import page, words
+import json
+
 
 model = load_model("D:/Projects/AIML/DIGILIPI/Malayalam_detection.h5")
 with open("detail.pkl", 'rb') as f:
     loaded_pickle_data = pickle.load(f)
 
 class_labels = loaded_pickle_data['class_labels']
+target_names = loaded_pickle_data['target_names']
+
+UPLOAD_FOLDER = "static/uploads"
+CROPPED_FOLDER = "static/cropped_letters"
 
 def process_image(image_path):
     """ Detects and crops letter regions from the image """
@@ -49,16 +55,28 @@ def process_image(image_path):
 
 def predict_letters(test_fold):
     """ Predicts letters from cropped images """
-    predictions = []
-    for img_path in test_fold:
-        print(img_path)
-        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-        img = cv2.resize(img, (128, 128), interpolation=cv2.INTER_LINEAR)
-        img = np.reshape(img, (1, 128, 128, 1))
 
-        prediction = model.predict(img, verbose=0)
-        predicted_class = np.argmax(prediction[0])
-        predictions.append(class_labels[predicted_class])
-    print(predictions)
+    with open("cropped_letters/bounding_boxes.json", "r") as f:
+        bounding_boxes = json.load(f)
+    bounding_boxes.sort(key=lambda b: (b["y"], b["x"]))
+
+    predictions = []
+    for img, box in zip(test_fold, bounding_boxes):
+        i = cv2.imread(img, cv2.IMREAD_GRAYSCALE)
+        i = cv2.resize(i, (128, 128), interpolation=cv2.INTER_LINEAR)
+        i = np.reshape(i, (1, 128, 128, 1))
+
+        prediction = model.predict(i, verbose=0)
+        p = np.argmax(prediction[0])
+        
+        recognized_char = target_names[p] 
+        print(recognized_char) 
+        predictions.append((box["y"], box["x"], recognized_char)) 
+
+    predictions.sort()
+
+    recognized_text = "".join([char for _, _, char in predictions])
+    with open("recognized_text.txt", "w", encoding="utf-8") as f:
+        f.write(recognized_text)
     
     return predictions

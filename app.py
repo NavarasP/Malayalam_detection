@@ -8,9 +8,13 @@ from tqdm import tqdm
 import glob
 from ocr import page, words
 from functions import *
+from flask_cors import CORS
+
 
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
+
 app.secret_key = "your_secret_key"
 UPLOAD_FOLDER = "static/uploads"
 CROPPED_FOLDER = "static/cropped_letters"

@@ -13,8 +13,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
   bool isPasswordVisible = false;
 
-  final String apiUrl = "http://127.0.0.1:5000/login"; // Replace with your Flask server URL
-
+  final String apiUrl = "http://127.0.0.1:5000/login";
   @override
   void dispose() {
     usernameController.dispose();

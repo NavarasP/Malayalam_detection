@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'result_page.dart';
 
 class OptimizingPage extends StatefulWidget {
-  final File file; // Add a file parameter
+  final File file;
+  final Map<String, dynamic> result; // Processed result from API
 
-  // Constructor to accept a file
-  OptimizingPage({required this.file});
+  OptimizingPage({required this.file, required this.result});
 
   @override
   _OptimizingPageState createState() => _OptimizingPageState();
@@ -16,11 +16,13 @@ class _OptimizingPageState extends State<OptimizingPage> {
   @override
   void initState() {
     super.initState();
-    // Wait for 2 seconds and navigate to the ResultPage
+    // Simulating processing delay
     Future.delayed(Duration(seconds: 2), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => ResultPage()),
+        MaterialPageRoute(
+          builder: (context) => ResultPage(file: widget.file, result: widget.result),
+        ),
       );
     });
   }
@@ -28,14 +30,14 @@ class _OptimizingPageState extends State<OptimizingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Optimizing')),
+      appBar: AppBar(title: Text('Processing...')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 20),
-            Text('Optimizing your file...'),
+            Text('Processing your file... Please wait.'),
           ],
         ),
       ),
