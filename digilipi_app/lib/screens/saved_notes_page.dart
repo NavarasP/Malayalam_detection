@@ -26,7 +26,7 @@ class _SavedNotesPageState extends State<SavedNotesPage> {
   Future<void> _loadUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      userId = prefs.getString('user_id');
+int? userId = prefs.getInt('user_id'); // ✅ Correct
     });
     if (userId != null) {
       _fetchNotes();
@@ -36,12 +36,15 @@ class _SavedNotesPageState extends State<SavedNotesPage> {
   Future<void> _fetchNotes() async {
     if (userId == null) return;
 
-    final response = await http.get(Uri.parse('$apiUrl/get_notes'));
+    final response = await http.get(Uri.parse('$apiUrl/get_notes?user_id=$userId')); // Include userId
     
     if (response.statusCode == 200) {
-      setState(() {
-        notes = List<Map<String, dynamic>>.from(json.decode(response.body)['notes']);
-      });
+      final data = json.decode(response.body);
+      if (data['notes'] != null && data['notes'] is List) {
+        setState(() {
+          notes = List<Map<String, dynamic>>.from(data['notes']);
+        });
+      }
     } else {
       _showErrorDialog('Failed to fetch notes');
     }
@@ -94,74 +97,73 @@ class _SavedNotesPageState extends State<SavedNotesPage> {
       _showErrorDialog('Failed to update note');
     }
   }
-Future<void> _captureAndUploadImage(BuildContext context) async {
-  final ImageSource? source = await _showImageSourceDialog(context);
-  if (source == null) return; 
 
-  final XFile? image = await _picker.pickImage(source: source);
-  if (image == null) {
-    print("No image selected.");
-    return;
-  }
+  Future<void> _captureAndUploadImage(BuildContext context) async {
+    final ImageSource? source = await _showImageSourceDialog(context);
+    if (source == null) return; 
 
-  File file = File(image.path);
-
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => Center(child: CircularProgressIndicator()),
-  );
-
-  try {
-    var request = http.MultipartRequest('POST', Uri.parse('$apiUrl/predict_text'));
-    request.files.add(await http.MultipartFile.fromPath('file', file.path));
-
-    var response = await request.send();
-    var responseBody = await response.stream.bytesToString();
-    var jsonResponse = jsonDecode(responseBody);
-    
-
-    Navigator.pop(context);
-
-    if (response.statusCode == 200) {
-  String extractedText = jsonResponse["text"] ?? "No text extracted.";
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ResultPage(file: file, resultText: extractedText),
-        ),
-      );
-    } else {
-      _showErrorDialog('Processing failed');
+    final XFile? image = await _picker.pickImage(source: source);
+    if (image == null) {
+      _showErrorDialog("No image selected.");
+      return;
     }
-  } catch (e) {
-    Navigator.pop(context);
-    _showErrorDialog('Error uploading file: $e');
+
+    File file = File(image.path);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      var request = http.MultipartRequest('POST', Uri.parse('$apiUrl/predict_text'));
+      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+      var jsonResponse = jsonDecode(responseBody);
+
+      Navigator.pop(context);
+
+      if (response.statusCode == 200) {
+        String extractedText = jsonResponse["text"] ?? "No text extracted.";
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResultPage(file: file, resultText: extractedText),
+          ),
+        );
+      } else {
+        _showErrorDialog('Processing failed');
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      _showErrorDialog('Error uploading file: $e');
+    }
   }
-}
 
-Future<ImageSource?> _showImageSourceDialog(BuildContext context) async {
-  return showModalBottomSheet<ImageSource>(
-    context: context,
-    builder: (context) => SafeArea(
-      child: Wrap(
-        children: [
-          ListTile(
-            leading: Icon(Icons.camera_alt),
-            title: Text('Camera'),
-            onTap: () => Navigator.pop(context, ImageSource.camera),
-          ),
-          ListTile(
-            leading: Icon(Icons.photo_library),
-            title: Text('Gallery'),
-            onTap: () => Navigator.pop(context, ImageSource.gallery),
-          ),
-        ],
+  Future<ImageSource?> _showImageSourceDialog(BuildContext context) async {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: Icon(Icons.camera_alt),
+              title: Text('Camera'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library),
+              title: Text('Gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -179,33 +181,34 @@ Future<ImageSource?> _showImageSourceDialog(BuildContext context) async {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Saved Notes'), centerTitle: true),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: ListView.builder(
-          itemCount: notes.length,
-          itemBuilder: (context, index) {
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                title: Text(
-                  notes[index]['content'],
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 16),
-                ),
-                trailing: IconButton(
-                  icon: Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () => _editNoteDialog(index),
-                ),
+        child: notes.isEmpty
+            ? Center(child: Text("No saved notes"))
+            : ListView.builder(
+                itemCount: notes.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: ListTile(
+                      title: Text(
+                        notes[index]['content'],
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      trailing: IconButton(
+                        icon: Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () => _editNoteDialog(index),
+                      ),
+                    ),
+                  );
+                },
               ),
-            );
-          },
-        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _captureAndUploadImage(context),

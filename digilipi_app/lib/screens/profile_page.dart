@@ -12,30 +12,37 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   String username = "Loading...";
   String email = "";
-  final String apiUrl = "http://127.0.0.1:5000/api/get_profile";
 
-  Future<void> _fetchProfile() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    int? userId = prefs.getInt("user_id");
-    if (userId == null) {
-      _showError("Unauthorized. Please log in again.");
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => LoginPage()));
-      return;
-    }
 
-    final response = await http.get(Uri.parse("$apiUrl?user_id=$userId"));
+Future<void> _fetchProfile() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+int? userId = prefs.getInt("user_id"); // ✅ Correct
+
+  if (userId == null) {
+    _showError("Unauthorized. Please log in again.");
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
+    return;
+  }
+
+  final url = Uri.parse("http://164.92.97.108:5000/api/get_profile?user_id=$userId");
+
+  try {
+    final response = await http.get(url);
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       setState(() {
-        username = data["username"];
-        email = data["email"];
+        username = data["username"] ?? "Unknown User";
+        email = data["email"] ?? "No email available";
       });
     } else {
-      _showError("Failed to load profile");
+      _showError("Failed to load profile: ${response.body}");
     }
+  } catch (e) {
+    _showError("Error fetching profile: $e");
   }
+}
+
 
   void _logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();

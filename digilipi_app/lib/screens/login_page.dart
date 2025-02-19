@@ -33,14 +33,16 @@ class _LoginPageState extends State<LoginPage> {
       }),
     );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-       if (data["success"]) {
-        int userId = data["user_id"]; // Extract user ID
+if (response.statusCode == 200) {
+  final data = jsonDecode(response.body);
 
-        // Save user_id to SharedPreferences for future use
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setInt("user_id", userId);
+  if (data["success"]) {
+int userId = int.parse(data["user_id"].toString()); // ✅ Correct
+
+    // Save user_id to SharedPreferences for future use
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt("user_id", userId);
+
 
         Navigator.pushReplacement(
           context,

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import this
 
 class ResultPage extends StatefulWidget {
   final File? file;
@@ -33,10 +34,23 @@ void _saveResult() async {
   final url = Uri.parse("http://164.92.97.108:5000/api/save_note"); // Replace with actual API URL
 
   try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int? userId = prefs.getInt("user_id"); // Retrieve stored user ID
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('User not logged in!')),
+      );
+      return;
+    }
+
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"content": resultController.text}),
+      body: jsonEncode({
+        "user_id": userId,  
+        "content": resultController.text,
+      }),
     );
 
     final responseData = jsonDecode(response.body);
@@ -60,7 +74,6 @@ void _saveResult() async {
     });
   }
 }
-
 
   void _copyToClipboard() {
     Clipboard.setData(ClipboardData(text: resultController.text));

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'capture_upload_section.dart';
 import 'saved_notes_page.dart';
 import 'profile_page.dart';
 
