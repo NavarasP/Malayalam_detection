@@ -19,7 +19,6 @@ class _FrontPageState extends State<FrontPage> {
     if (status.isGranted) {
       _navigateToLogin();
     } else {
-      // Handle permission denial (optional)r
       print("Camera permission denied");
     }
   }

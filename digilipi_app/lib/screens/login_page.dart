@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'home.dart';
 
 class LoginPage extends StatefulWidget {
@@ -13,7 +14,8 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
   bool isPasswordVisible = false;
 
-  final String apiUrl = "http://127.0.0.1:5000/login";
+  final String apiUrl = "http://164.92.97.108:5000/api/login"; 
+
   @override
   void dispose() {
     usernameController.dispose();
@@ -21,49 +23,41 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // Future<void> _login() async {
-  //   final response = await http.post(
-  //     Uri.parse(apiUrl),
-  //     headers: {"Content-Type": "application/json"},
-  //     body: jsonEncode({
-  //       "username": usernameController.text,
-  //       "password": passwordController.text,
-  //     }),
-  //   );
+  Future<void> _login() async {
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "username": usernameController.text,
+        "password": passwordController.text,
+      }),
+    );
 
-  //   if (response.statusCode == 200) {
-  //     final data = jsonDecode(response.body);
-  //     if (data["success"]) {
-  //       Navigator.pushReplacement(
-  //         context,
-  //         PageRouteBuilder(
-  //           pageBuilder: (context, animation, secondaryAnimation) => HomePage(),
-  //           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-  //             return FadeTransition(opacity: animation, child: child);
-  //           },
-  //         ),
-  //       );
-  //     } else {
-  //       _showErrorSnackBar("Invalid credentials");
-  //     }
-  //   } else {
-  //     _showErrorSnackBar("Server error. Please try again.");
-  //   }
-  // }
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+       if (data["success"]) {
+        int userId = data["user_id"]; // Extract user ID
 
+        // Save user_id to SharedPreferences for future use
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setInt("user_id", userId);
 
-Future<void> _login() async {
-  // Temporarily skip API call and go to the next page
-  Navigator.pushReplacement(
-    context,
-    PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => HomePage(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(opacity: animation, child: child);
-      },
-    ),
-  );
-}
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => HomePage(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
+        );
+      } else {
+        _showErrorSnackBar("Invalid credentials");
+      }
+    } else {
+      _showErrorSnackBar("Server error. Please try again.");
+    }
+  }
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'dart:convert'; 
+import 'dart:convert';
 import 'package:http/http.dart' as http;
-
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ResultPage extends StatefulWidget {
-  final File? file; // Optional image file
-  final String? resultText; // Processed result text from API
+  final File? file;
+  final String? resultText;
 
   ResultPage({this.file, this.resultText});
 
@@ -16,7 +17,7 @@ class ResultPage extends StatefulWidget {
 
 class _ResultPageState extends State<ResultPage> {
   late TextEditingController resultController;
-  bool isLoading = false; // To show progress indicator
+  bool isLoading = false; // Show progress indicator
 
   @override
   void initState() {
@@ -24,38 +25,52 @@ class _ResultPageState extends State<ResultPage> {
     resultController = TextEditingController(text: widget.resultText ?? "No result available.");
   }
 
-  Future<void> _saveResult() async {
-    setState(() {
-      isLoading = true;
-    });
+void _saveResult() async {
+  setState(() {
+    isLoading = true;
+  });
 
-    const String apiUrl = "https://127.0.0:5000/save";
+  final url = Uri.parse("http://164.92.97.108:5000/api/save_note"); // Replace with actual API URL
 
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"note": resultController.text}),
-      );
+  try {
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"content": resultController.text}),
+    );
 
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Result saved successfully!')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save result. Please try again.')),
-        );
-      }
-    } catch (e) {
+    final responseData = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && responseData["success"]) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(content: Text('Note saved successfully!')),
       );
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save note: ${responseData["message"]}')),
+      );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error saving note: $e')),
+    );
+  } finally {
+    setState(() {
+      isLoading = false;
+    });
+  }
+}
+
+
+  void _copyToClipboard() {
+    Clipboard.setData(ClipboardData(text: resultController.text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Copied to clipboard!')),
+    );
+  }
+
+  void _shareResult() {
+    Share.share(resultController.text);
   }
 
   @override
@@ -68,9 +83,7 @@ class _ResultPageState extends State<ResultPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (widget.file != null) ...[
-              Center(
-                child: Image.file(widget.file!, height: 200, fit: BoxFit.cover),
-              ),
+              Center(child: Image.file(widget.file!, height: 200, fit: BoxFit.cover)),
               SizedBox(height: 20),
             ],
             Text('Processed Text:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -88,18 +101,15 @@ class _ResultPageState extends State<ResultPage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: isLoading ? null : _saveResult, // Disable button while loading
-                  child: isLoading
-                      ? CircularProgressIndicator(color: Colors.white)
-                      : Text('Save'),
+                  onPressed: _saveResult, 
+                  child: Text('Save'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    // Future Share functionality
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Sharing not implemented yet!')),
-                    );
-                  },
+                  onPressed: _copyToClipboard,
+                  child: Text('Copy'),
+                ),
+                ElevatedButton(
+                  onPressed: _shareResult,
                   child: Text('Share'),
                 ),
               ],
